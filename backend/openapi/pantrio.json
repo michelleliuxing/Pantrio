@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "Pantrio.Api | v1",
-    "version": "1.0.0"
+    "title": "Pantrio API",
+    "version": "v1"
   },
   "paths": {
     "/api/health": {
@@ -24,10 +24,187 @@
           }
         }
       }
+    },
+    "/api/me": {
+      "get": {
+        "tags": [
+          "Household"
+        ],
+        "operationId": "GetMe",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/household": {
+      "patch": {
+        "tags": [
+          "Household"
+        ],
+        "operationId": "UpdateHousehold",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHouseholdRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HouseholdDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/providers": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "GetAuthProviders",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthProvidersResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/google/login": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "GoogleLogin",
+        "parameters": [
+          {
+            "name": "returnUrl",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/dev-login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "DevLogin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Logout",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AuthProvidersResponse": {
+        "required": [
+          "google",
+          "devLogin"
+        ],
+        "type": "object",
+        "properties": {
+          "google": {
+            "type": "boolean"
+          },
+          "devLogin": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DevLoginRequest": {
+        "required": [
+          "email"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "maxLength": 320,
+            "minLength": 0,
+            "type": "string"
+          },
+          "displayName": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "HealthResponse": {
         "required": [
           "status"
@@ -38,12 +215,203 @@
             "type": "string"
           }
         }
+      },
+      "HouseholdDto": {
+        "required": [
+          "id",
+          "name",
+          "timeZone",
+          "hiddenMealSlots",
+          "dietaryPrefs"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "hiddenMealSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MealSlot"
+            }
+          },
+          "dietaryPrefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "HouseholdRole": {
+        "enum": [
+          "owner",
+          "editor",
+          "viewer"
+        ]
+      },
+      "HttpValidationProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "MealSlot": {
+        "enum": [
+          "breakfast",
+          "lunch",
+          "dinner"
+        ]
+      },
+      "MeResponse": {
+        "required": [
+          "user",
+          "household",
+          "role",
+          "canDelete"
+        ],
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          },
+          "household": {
+            "$ref": "#/components/schemas/HouseholdDto"
+          },
+          "role": {
+            "$ref": "#/components/schemas/HouseholdRole"
+          },
+          "canDelete": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateHouseholdRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "timeZone": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hiddenMealSlots": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MealSlot"
+            }
+          },
+          "dietaryPrefs": {
+            "maxItems": 20,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UserDto": {
+        "required": [
+          "id",
+          "email",
+          "displayName",
+          "avatarUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       }
     }
   },
   "tags": [
     {
       "name": "System"
+    },
+    {
+      "name": "Household"
+    },
+    {
+      "name": "Auth"
     }
   ]
 }
