@@ -7,7 +7,7 @@ import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Loader2, Minus, MoreVertical, Plus, Sparkles, Star, Trash2, WandSparkles } from "lucide-react";
+import { ArrowLeft, Copy, Loader2, Minus, MoreVertical, Plus, ShoppingCart, Sparkles, Star, Trash2, WandSparkles } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api, errorMessage, unwrap } from "@/lib/api/client";
 import { useMe } from "@/lib/queries/me";
+import { useAddRecipeToList } from "@/lib/queries/plan";
 import {
   useDeleteRecipe,
   useDuplicateRecipe,
@@ -41,6 +42,7 @@ export function RecipeEditor({ recipe }: { recipe?: Recipe }) {
   const duplicate = useDuplicateRecipe();
   const remove = useDeleteRecipe();
   const favourite = useToggleFavourite();
+  const addToList = useAddRecipeToList();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [focusKey, setFocusKey] = useState<string | null>(null);
@@ -137,6 +139,22 @@ export function RecipeEditor({ recipe }: { recipe?: Recipe }) {
                 <MoreVertical />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() =>
+                    addToList.mutate(
+                      { recipeId: recipe.id },
+                      {
+                        onSuccess: () =>
+                          toast.success("Added to this week’s cart and the shopping list", {
+                            action: { label: "View list", onClick: () => router.push("/list") },
+                          }),
+                        onError: (err) => toast.error(errorMessage(err)),
+                      },
+                    )
+                  }
+                >
+                  <ShoppingCart /> Add to shopping list
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
                     duplicate.mutate(recipe.id, {

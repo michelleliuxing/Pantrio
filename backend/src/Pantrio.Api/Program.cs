@@ -5,7 +5,9 @@ using Pantrio.Api.Auth;
 using Pantrio.Api.Features.Ai;
 using Pantrio.Api.Features.Households;
 using Pantrio.Api.Features.Ingredients;
+using Pantrio.Api.Features.MealPlans;
 using Pantrio.Api.Features.Recipes;
+using Pantrio.Api.Features.ShoppingList;
 using Pantrio.Api.Infrastructure;
 using Pantrio.Infrastructure;
 
@@ -28,6 +30,7 @@ builder.Services.AddPantrioAuth(config, builder.Environment);
 builder.Services.AddPantrioRateLimits(config);
 builder.Services.AddScoped<IngredientMatcher>();
 builder.Services.AddScoped<RecipeService>();
+builder.Services.AddScoped<ShoppingListService>();
 
 var app = builder.Build();
 
@@ -52,6 +55,8 @@ api.MapHouseholdEndpoints();
 api.MapIngredientEndpoints();
 api.MapRecipeEndpoints();
 api.MapAiEndpoints();
+api.MapMealPlanEndpoints();
+api.MapShoppingListEndpoints();
 
 app.Run();
 

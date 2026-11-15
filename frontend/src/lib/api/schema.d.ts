@@ -244,15 +244,199 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/meal-plans/{weekStart}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMealPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meal-plans/{weekStart}/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AddMealPlanEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meal-plans/{weekStart}/copy-previous": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CopyPreviousWeek"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meal-plan-entries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateMealPlanEntry"];
+        post?: never;
+        delete: operations["DeleteMealPlanEntry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shopping-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetShoppingList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shopping-list/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["BuildShoppingList"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shopping-list/add-recipe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AddRecipeToShoppingList"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shopping-list/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AddShoppingListExtra"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shopping-list/items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["DeleteShoppingListItem"];
+        options?: never;
+        head?: never;
+        patch: operations["UpdateShoppingListItem"];
+        trace?: never;
+    };
+    "/api/shopping-list/clear-bought": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ClearCompletedItems"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddEntryRequest: {
+            /** Format: uuid */
+            recipeId: string;
+            /** Format: date */
+            day?: null | string;
+            mealSlot?: null | components["schemas"]["MealSlot"];
+            /** Format: int32 */
+            servingsOverride?: null | number;
+        };
+        AddExtraRequest: {
+            name: string;
+            quantityText?: null | string;
+            category?: null | components["schemas"]["AisleCategory"];
+        };
+        AddRecipeToListRequest: {
+            /** Format: uuid */
+            recipeId: string;
+            /** Format: int32 */
+            servings?: null | number;
+        };
         /** @enum {unknown} */
         AisleCategory: "produce" | "meat_seafood" | "dairy_eggs" | "bakery" | "pantry" | "sauces_condiments" | "spices" | "international" | "frozen" | "drinks" | "snacks" | "household" | "other";
         AuthProvidersResponse: {
             google: boolean;
             devLogin: boolean;
+        };
+        BuildListRequest: {
+            /** Format: date */
+            weekStart: string;
         };
         CatalogueMatch: {
             /** Format: uuid */
@@ -318,6 +502,39 @@ export interface components {
             servings: number;
             ingredients: components["schemas"]["SuggestedIngredientDto"][];
             isFake: boolean;
+        };
+        /** @enum {unknown} */
+        ItemState: "needed" | "bought" | "have_it";
+        ListSourceDto: {
+            /** Format: uuid */
+            entryId: string;
+            recipeName: string;
+            amount: string;
+            /** Format: date */
+            weekStart: string;
+        };
+        MealPlanDto: {
+            /** Format: uuid */
+            id: null | string;
+            /** Format: date */
+            weekStart: string;
+            entries: components["schemas"]["MealPlanEntryDto"][];
+        };
+        MealPlanEntryDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            recipeId: string;
+            recipeName: string;
+            /** Format: int32 */
+            recipeServings: number;
+            /** Format: date */
+            day: null | string;
+            mealSlot: null | components["schemas"]["MealSlot"];
+            /** Format: int32 */
+            servingsOverride: null | number;
+            /** Format: int32 */
+            sortOrder: number;
         };
         /** @enum {unknown} */
         MealSlot: "breakfast" | "lunch" | "dinner";
@@ -413,6 +630,26 @@ export interface components {
             units: components["schemas"]["UnitInfo"][];
             categories: components["schemas"]["AisleCategory"][];
         };
+        ShoppingListDto: {
+            items: components["schemas"]["ShoppingListItemDto"][];
+        };
+        ShoppingListItemDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            category: components["schemas"]["AisleCategory"];
+            state: components["schemas"]["ItemState"];
+            isExtra: boolean;
+            inCheckGroup: boolean;
+            dimension: null | components["schemas"]["Dimension"];
+            unitLabel: null | string;
+            /** Format: double */
+            total: null | number;
+            amount: string;
+            amountIncreased: boolean;
+            boughtAmount: null | string;
+            sources: components["schemas"]["ListSourceDto"][];
+        };
         SuggestedIngredientDto: {
             name: string;
             /** Format: double */
@@ -438,6 +675,13 @@ export interface components {
             code: string;
             dimension: components["schemas"]["Dimension"];
         };
+        UpdateEntryRequest: {
+            /** Format: date */
+            day?: null | string;
+            mealSlot?: null | components["schemas"]["MealSlot"];
+            /** Format: int32 */
+            servingsOverride?: null | number;
+        };
         UpdateHouseholdRequest: {
             name?: null | string;
             timeZone?: null | string;
@@ -450,6 +694,13 @@ export interface components {
             isStaple?: null | boolean;
             defaultUnit?: null | string;
             aliases?: null | string[];
+        };
+        UpdateListItemRequest: {
+            state?: null | components["schemas"]["ItemState"];
+            inCheckGroup?: null | boolean;
+            name?: null | string;
+            quantityText?: null | string;
+            category?: null | components["schemas"]["AisleCategory"];
         };
         UpdateRecipeFlagsRequest: {
             isFavourite?: null | boolean;
@@ -1025,6 +1276,376 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    GetMealPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                weekStart: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealPlanDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    AddMealPlanEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                weekStart: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealPlanEntryDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CopyPreviousWeek: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                weekStart: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealPlanDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateMealPlanEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealPlanEntryDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeleteMealPlanEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GetShoppingList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShoppingListDto"];
+                };
+            };
+        };
+    };
+    BuildShoppingList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildListRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShoppingListDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    AddRecipeToShoppingList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddRecipeToListRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShoppingListDto"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AddShoppingListExtra: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddExtraRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShoppingListItemDto"];
+                };
+            };
+        };
+    };
+    DeleteShoppingListItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UpdateShoppingListItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateListItemRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShoppingListItemDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ClearCompletedItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShoppingListDto"];
+                };
             };
         };
     };

@@ -668,10 +668,537 @@
           }
         }
       }
+    },
+    "/api/meal-plans/{weekStart}": {
+      "get": {
+        "tags": [
+          "Meal plans"
+        ],
+        "operationId": "GetMealPlan",
+        "parameters": [
+          {
+            "name": "weekStart",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlanDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/meal-plans/{weekStart}/entries": {
+      "post": {
+        "tags": [
+          "Meal plans"
+        ],
+        "operationId": "AddMealPlanEntry",
+        "parameters": [
+          {
+            "name": "weekStart",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlanEntryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/meal-plans/{weekStart}/copy-previous": {
+      "post": {
+        "tags": [
+          "Meal plans"
+        ],
+        "operationId": "CopyPreviousWeek",
+        "parameters": [
+          {
+            "name": "weekStart",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlanDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/meal-plan-entries/{id}": {
+      "put": {
+        "tags": [
+          "Meal plans"
+        ],
+        "operationId": "UpdateMealPlanEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealPlanEntryDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Meal plans"
+        ],
+        "operationId": "DeleteMealPlanEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/shopping-list": {
+      "get": {
+        "tags": [
+          "Shopping list"
+        ],
+        "operationId": "GetShoppingList",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingListDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shopping-list/build": {
+      "post": {
+        "tags": [
+          "Shopping list"
+        ],
+        "operationId": "BuildShoppingList",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildListRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingListDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shopping-list/add-recipe": {
+      "post": {
+        "tags": [
+          "Shopping list"
+        ],
+        "operationId": "AddRecipeToShoppingList",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddRecipeToListRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingListDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/shopping-list/items": {
+      "post": {
+        "tags": [
+          "Shopping list"
+        ],
+        "operationId": "AddShoppingListExtra",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddExtraRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingListItemDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shopping-list/items/{id}": {
+      "patch": {
+        "tags": [
+          "Shopping list"
+        ],
+        "operationId": "UpdateShoppingListItem",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingListItemDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shopping list"
+        ],
+        "operationId": "DeleteShoppingListItem",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/shopping-list/clear-bought": {
+      "post": {
+        "tags": [
+          "Shopping list"
+        ],
+        "operationId": "ClearCompletedItems",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingListDto"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AddEntryRequest": {
+        "required": [
+          "recipeId"
+        ],
+        "type": "object",
+        "properties": {
+          "recipeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "day": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "mealSlot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MealSlot"
+              }
+            ]
+          },
+          "servingsOverride": {
+            "maximum": 50,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "AddExtraRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "quantityText": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AisleCategory"
+              }
+            ]
+          }
+        }
+      },
+      "AddRecipeToListRequest": {
+        "required": [
+          "recipeId"
+        ],
+        "type": "object",
+        "properties": {
+          "recipeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "servings": {
+            "maximum": 50,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "AisleCategory": {
         "enum": [
           "produce",
@@ -701,6 +1228,18 @@
           },
           "devLogin": {
             "type": "boolean"
+          }
+        }
+      },
+      "BuildListRequest": {
+        "required": [
+          "weekStart"
+        ],
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date"
           }
         }
       },
@@ -999,6 +1538,123 @@
           },
           "isFake": {
             "type": "boolean"
+          }
+        }
+      },
+      "ItemState": {
+        "enum": [
+          "needed",
+          "bought",
+          "have_it"
+        ]
+      },
+      "ListSourceDto": {
+        "required": [
+          "entryId",
+          "recipeName",
+          "amount",
+          "weekStart"
+        ],
+        "type": "object",
+        "properties": {
+          "entryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recipeName": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "MealPlanDto": {
+        "required": [
+          "id",
+          "weekStart",
+          "entries"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MealPlanEntryDto"
+            }
+          }
+        }
+      },
+      "MealPlanEntryDto": {
+        "required": [
+          "id",
+          "recipeId",
+          "recipeName",
+          "recipeServings",
+          "day",
+          "mealSlot",
+          "servingsOverride",
+          "sortOrder"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recipeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recipeName": {
+            "type": "string"
+          },
+          "recipeServings": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "day": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "mealSlot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MealSlot"
+              }
+            ]
+          },
+          "servingsOverride": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -1416,6 +2072,100 @@
           }
         }
       },
+      "ShoppingListDto": {
+        "required": [
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShoppingListItemDto"
+            }
+          }
+        }
+      },
+      "ShoppingListItemDto": {
+        "required": [
+          "id",
+          "name",
+          "category",
+          "state",
+          "isExtra",
+          "inCheckGroup",
+          "dimension",
+          "unitLabel",
+          "total",
+          "amount",
+          "amountIncreased",
+          "boughtAmount",
+          "sources"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/AisleCategory"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ItemState"
+          },
+          "isExtra": {
+            "type": "boolean"
+          },
+          "inCheckGroup": {
+            "type": "boolean"
+          },
+          "dimension": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Dimension"
+              }
+            ]
+          },
+          "unitLabel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "total": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "amountIncreased": {
+            "type": "boolean"
+          },
+          "boughtAmount": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListSourceDto"
+            }
+          }
+        }
+      },
       "SuggestedIngredientDto": {
         "required": [
           "name",
@@ -1525,6 +2275,37 @@
           }
         }
       },
+      "UpdateEntryRequest": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "mealSlot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MealSlot"
+              }
+            ]
+          },
+          "servingsOverride": {
+            "maximum": 50,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "UpdateHouseholdRequest": {
         "type": "object",
         "properties": {
@@ -1612,6 +2393,53 @@
           }
         }
       },
+      "UpdateListItemRequest": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ItemState"
+              }
+            ]
+          },
+          "inCheckGroup": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "quantityText": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "category": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AisleCategory"
+              }
+            ]
+          }
+        }
+      },
       "UpdateRecipeFlagsRequest": {
         "type": "object",
         "properties": {
@@ -1670,6 +2498,12 @@
     },
     {
       "name": "Recipes"
+    },
+    {
+      "name": "Meal plans"
+    },
+    {
+      "name": "Shopping list"
     }
   ]
 }
