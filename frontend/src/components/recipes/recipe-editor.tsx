@@ -24,10 +24,12 @@ import {
   useReferenceData,
   useSaveRecipe,
   useToggleFavourite,
+  useUploadRecipeImage,
   type Recipe,
 } from "@/lib/queries/recipes";
 import { emptyRow, fromSuggestion, recipeFormSchema, toForm, toRequest, type RecipeForm } from "./editor-model";
 import { IngredientRow } from "./ingredient-row";
+import { RecipePhoto } from "./recipe-photo";
 import { TagsInput } from "./tags-input";
 
 const FALLBACK_UNITS = ["g", "kg", "ml", "l", "tsp", "tbsp", "cup", "each", "bunch", "clove", "can", "pack", "slice"];
@@ -46,6 +48,8 @@ export function RecipeEditor({ recipe }: { recipe?: Recipe }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [focusKey, setFocusKey] = useState<string | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<Blob | null>(null);
+  const uploadPhoto = useUploadRecipeImage();
 
   const form = useForm<RecipeForm>({ resolver: zodResolver(recipeFormSchema), defaultValues: toForm(recipe) });
   const { control, register, handleSubmit, setValue, reset, formState } = form;
@@ -96,8 +100,15 @@ export function RecipeEditor({ recipe }: { recipe?: Recipe }) {
 
   const onSubmit = handleSubmit((data) =>
     save.mutate(toRequest(data, recipe?.isFavourite), {
-      onSuccess: (saved) => {
+      onSuccess: async (saved) => {
         reset(toForm(saved));
+        if (!recipe && pendingPhoto) {
+          try {
+            await uploadPhoto.mutateAsync({ id: saved.id, blob: pendingPhoto });
+          } catch (err) {
+            toast.error(`Recipe saved, but the photo didn't upload: ${errorMessage(err)}`);
+          }
+        }
         toast.success("Recipe saved");
         if (!recipe) router.replace(`/recipes/${saved.id}`);
       },
@@ -178,6 +189,14 @@ export function RecipeEditor({ recipe }: { recipe?: Recipe }) {
           </>
         )}
       </div>
+
+      <RecipePhoto
+        recipeId={recipe?.id}
+        imageUrl={recipe?.imageUrl ?? null}
+        canEdit={canEdit}
+        pending={pendingPhoto}
+        onPendingChange={setPendingPhoto}
+      />
 
       <fieldset disabled={!canEdit} className="space-y-4">
         <div className="space-y-1.5">
@@ -327,10 +346,10 @@ export function RecipeEditor({ recipe }: { recipe?: Recipe }) {
         <div className="fixed inset-x-0 bottom-16 z-20 border-t bg-background/95 p-3 backdrop-blur md:bottom-0">
           <div className="mx-auto flex max-w-5xl items-center gap-3">
             <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-              {formState.isDirty || hasDrafts ? "Unsaved changes" : recipe ? "All changes saved" : ""}
+              {formState.isDirty || hasDrafts || pendingPhoto ? "Unsaved changes" : recipe ? "All changes saved" : ""}
             </p>
-            <Button type="submit" className="h-11 px-6" disabled={save.isPending}>
-              {save.isPending && <Loader2 className="animate-spin" />}
+            <Button type="submit" className="h-11 px-6" disabled={save.isPending || uploadPhoto.isPending}>
+              {(save.isPending || uploadPhoto.isPending) && <Loader2 className="animate-spin" />}
               Save recipe
             </Button>
           </div>

@@ -21,6 +21,11 @@ const rowSchema = z
     /** A close catalogue entry the AI draft might mean; offered, never applied automatically. */
     possibleMatchId: z.string().nullable(),
     possibleMatchName: z.string().nullable(),
+    /**
+     * The catalogue buy link. null = not known on this row (a new or typed row), so saving leaves the
+     * catalogue's link alone; "" = known to be empty, or cleared by the person.
+     */
+    purchaseUrl: z.string().nullable(),
   })
   .superRefine((row, ctx) => {
     if (row.unit !== TEXT_UNIT && row.quantity.trim() !== "") {
@@ -29,7 +34,28 @@ const rowSchema = z
         ctx.addIssue({ code: "custom", path: ["quantity"], message: "Use a number above 0" });
       }
     }
+    if (row.purchaseUrl && row.purchaseUrl.trim() !== "" && !isHttpUrl(row.purchaseUrl)) {
+      ctx.addIssue({ code: "custom", path: ["purchaseUrl"], message: "Paste the full link, starting with https://" });
+    }
   });
+
+export function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+/** "woolworths.com.au" from a product URL, for compact labels. */
+export function linkHost(value: string): string {
+  try {
+    return new URL(value).hostname.replace(/^www\./, "");
+  } catch {
+    return value;
+  }
+}
 
 export const recipeFormSchema = z.object({
   name: z.string().trim().min(1, "Give the dish a name").max(200),
@@ -63,6 +89,7 @@ export function emptyRow(partial: Partial<IngredientRowValue> = {}): IngredientR
     draft: false,
     possibleMatchId: null,
     possibleMatchName: null,
+    purchaseUrl: null,
     ...partial,
   };
 }
@@ -100,6 +127,7 @@ export function toForm(recipe?: Schemas["RecipeDto"], defaults?: { name?: string
         isStaple: i.isStaple,
         category: i.category,
         note: i.note ?? "",
+        purchaseUrl: i.purchaseUrl ?? "",
       }),
     ),
   };
@@ -127,6 +155,7 @@ export function toRequest(form: RecipeForm, isFavourite?: boolean): Schemas["Rec
         isStaple: r.isStaple,
         category: r.category,
         note: r.note.trim() || null,
+        purchaseUrl: r.purchaseUrl === null ? null : r.purchaseUrl.trim(),
       };
     }),
   };
@@ -146,5 +175,6 @@ export function fromSuggestion(s: Schemas["SuggestedIngredientDto"]): Ingredient
     draft: true,
     possibleMatchId: s.possibleMatch?.ingredientId ?? null,
     possibleMatchName: s.possibleMatch?.name ?? null,
+    purchaseUrl: s.ingredientId ? (s.purchaseUrl ?? "") : null,
   });
 }

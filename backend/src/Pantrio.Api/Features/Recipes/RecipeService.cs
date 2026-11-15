@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Pantrio.Api.Features.Ingredients;
+using Pantrio.Api.Infrastructure;
 using Pantrio.Domain;
 using Pantrio.Domain.Quantities;
 using Pantrio.Infrastructure.Data;
@@ -21,12 +22,15 @@ public sealed class RecipeService(PantrioDbContext db, IngredientMatcher matcher
         return await query.FirstOrDefaultAsync(r => r.Id == id, ct);
     }
 
+    /// <summary>When the recipe's photo last changed, without loading the image bytes.</summary>
+    public Task<DateTimeOffset?> ImageVersionAsync(Guid recipeId, CancellationToken ct) =>
+        db.RecipeImages.Where(i => i.RecipeId == recipeId).Select(i => (DateTimeOffset?)i.UpdatedAt).FirstOrDefaultAsync(ct);
+
     /// <summary>Validates the request beyond attributes. Returns field errors keyed like "ingredients[2].unit".</summary>
     public static Dictionary<string, string[]> Validate(RecipeUpsertRequest body)
     {
         var errors = new Dictionary<string, string[]>();
-        if (body.SourceUrl is { Length: > 0 } url
-            && (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)))
+        if (!string.IsNullOrWhiteSpace(body.SourceUrl) && !Urls.IsHttp(body.SourceUrl))
         {
             errors["sourceUrl"] = ["Use a full http(s) link."];
         }
@@ -42,6 +46,11 @@ public sealed class RecipeService(PantrioDbContext db, IngredientMatcher matcher
             if (row.Quantity is not null && !Units.TryNormalise(row.Unit, out _))
             {
                 errors[$"ingredients[{i}].unit"] = [$"'{row.Unit}' is not a unit."];
+            }
+
+            if (!string.IsNullOrWhiteSpace(row.PurchaseUrl) && !Urls.IsHttp(row.PurchaseUrl))
+            {
+                errors[$"ingredients[{i}].purchaseUrl"] = ["Use a full http(s) link."];
             }
         }
 
@@ -122,6 +131,7 @@ public sealed class RecipeService(PantrioDbContext db, IngredientMatcher matcher
                     Category = row.Category ?? AisleCategory.Other,
                     IsStaple = row.IsStaple ?? false,
                     DefaultUnit = row.Quantity is not null && Units.TryNormalise(row.Unit, out var u) ? u.Code : null,
+                    PurchaseUrl = row.PurchaseUrl is null ? null : Urls.Normalize(row.PurchaseUrl),
                 };
                 db.Ingredients.Add(ingredient);
                 created[normalized] = ingredient;
@@ -129,6 +139,7 @@ public sealed class RecipeService(PantrioDbContext db, IngredientMatcher matcher
 
             if (row.Category is { } category && ingredient.Category != category) ingredient.Category = category;
             if (row.IsStaple is { } staple && ingredient.IsStaple != staple) ingredient.IsStaple = staple;
+            if (row.PurchaseUrl is { } url) ingredient.PurchaseUrl = Urls.Normalize(url);
             result.Add(ingredient);
         }
 

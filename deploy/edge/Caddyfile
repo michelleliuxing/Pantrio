@@ -21,7 +21,7 @@
 {$PANTRIO_API_DOMAIN} {
 	import common
 	request_body {
-		max_size 1MB
+		max_size 3MB
 	}
 	reverse_proxy pantrio-api:8080
 }

@@ -64,6 +64,9 @@ public sealed class Ingredient : IHouseholdScoped
 
     public List<string> Aliases { get; set; } = [];
     public string? DefaultUnit { get; set; }
+
+    /// <summary>Where the household buys this, e.g. a Woolworths or Coles product page. http(s) only.</summary>
+    public string? PurchaseUrl { get; set; }
     public AisleCategory Category { get; set; } = AisleCategory.Other;
     public bool IsStaple { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
@@ -96,6 +99,25 @@ public sealed class Recipe : IHouseholdScoped
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public List<RecipeIngredient> Ingredients { get; set; } = [];
+
+    /// <summary>Optional photo, kept in its own table so recipe queries never load image bytes.</summary>
+    public RecipeImage? Image { get; set; }
+}
+
+/// <summary>
+/// A recipe's photo, stored in PostgreSQL so the database stays the only state on the server
+/// (backups and moves include it). Resized in the browser before upload, so rows stay small.
+/// </summary>
+public sealed class RecipeImage : IHouseholdScoped
+{
+    public Guid RecipeId { get; set; }
+    public Guid HouseholdId { get; set; }
+
+    /// <summary>image/jpeg, image/png or image/webp, detected from the bytes, not trusted from the client.</summary>
+    public required string ContentType { get; set; }
+
+    public required byte[] Data { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
 public sealed class RecipeIngredient : IHouseholdScoped

@@ -78,4 +78,23 @@ export function useClearCompleted() {
   });
 }
 
+/** Sets or clears a catalogue ingredient's buy link from the list. The list reads links live, so a refetch shows it. */
+export function useSetPurchaseUrl() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ingredientId, purchaseUrl }: { ingredientId: string; purchaseUrl: string }) =>
+      unwrap(api.PATCH("/api/ingredients/{id}", { params: { path: { id: ingredientId } }, body: { purchaseUrl } })),
+    onSuccess: (ingredient) => {
+      qc.setQueryData<ShoppingList>(listKey, (list) =>
+        list
+          ? { items: list.items.map((i) => (i.ingredientId === ingredient.id ? { ...i, purchaseUrl: ingredient.purchaseUrl } : i)) }
+          : list,
+      );
+      qc.invalidateQueries({ queryKey: listKey }); // extras matching this name pick it up too
+      qc.invalidateQueries({ queryKey: ["recipes", "detail"] });
+      qc.invalidateQueries({ queryKey: ["ingredients"] });
+    },
+  });
+}
+
 export type { ListItem };

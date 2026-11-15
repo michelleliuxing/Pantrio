@@ -669,6 +669,93 @@
         }
       }
     },
+    "/api/recipes/{id}/image": {
+      "put": {
+        "tags": [
+          "Recipes"
+        ],
+        "operationId": "UploadRecipeImage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeImageDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Recipes"
+        ],
+        "operationId": "DeleteRecipeImage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/meal-plans/{weekStart}": {
       "get": {
         "tags": [
@@ -1303,6 +1390,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "purchaseUrl": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1432,6 +1527,10 @@
           }
         }
       },
+      "IFormFile": {
+        "type": "string",
+        "format": "binary"
+      },
       "IngredientDto": {
         "required": [
           "id",
@@ -1439,7 +1538,8 @@
           "aliases",
           "defaultUnit",
           "category",
-          "isStaple"
+          "isStaple",
+          "purchaseUrl"
         ],
         "type": "object",
         "properties": {
@@ -1467,6 +1567,12 @@
           },
           "isStaple": {
             "type": "boolean"
+          },
+          "purchaseUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1709,7 +1815,8 @@
           "isFavourite",
           "createdAt",
           "updatedAt",
-          "ingredients"
+          "ingredients",
+          "imageUrl"
         ],
         "type": "object",
         "properties": {
@@ -1774,6 +1881,23 @@
             "items": {
               "$ref": "#/components/schemas/RecipeIngredientDto"
             }
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RecipeImageDto": {
+        "required": [
+          "imageUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "imageUrl": {
+            "type": "string"
           }
         }
       },
@@ -1789,7 +1913,8 @@
           "isStaple",
           "category",
           "note",
-          "sortOrder"
+          "sortOrder",
+          "purchaseUrl"
         ],
         "type": "object",
         "properties": {
@@ -1841,6 +1966,12 @@
           "sortOrder": {
             "type": "integer",
             "format": "int32"
+          },
+          "purchaseUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1914,6 +2045,14 @@
               "null",
               "string"
             ]
+          },
+          "purchaseUrl": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -1933,7 +2072,8 @@
           "prepMins",
           "isFavourite",
           "ingredientCount",
-          "updatedAt"
+          "updatedAt",
+          "imageUrl"
         ],
         "type": "object",
         "properties": {
@@ -1971,6 +2111,12 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2100,7 +2246,9 @@
           "amount",
           "amountIncreased",
           "boughtAmount",
-          "sources"
+          "sources",
+          "ingredientId",
+          "purchaseUrl"
         ],
         "type": "object",
         "properties": {
@@ -2163,6 +2311,19 @@
             "items": {
               "$ref": "#/components/schemas/ListSourceDto"
             }
+          },
+          "ingredientId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "purchaseUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -2177,7 +2338,8 @@
           "isStaple",
           "note",
           "ingredientId",
-          "possibleMatch"
+          "possibleMatch",
+          "purchaseUrl"
         ],
         "type": "object",
         "properties": {
@@ -2233,6 +2395,12 @@
               {
                 "$ref": "#/components/schemas/CatalogueMatch"
               }
+            ]
+          },
+          "purchaseUrl": {
+            "type": [
+              "null",
+              "string"
             ]
           }
         }
@@ -2390,6 +2558,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "purchaseUrl": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

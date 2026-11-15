@@ -13,7 +13,9 @@ public sealed record RecipeIngredientInput(
     bool Optional,
     bool? IsStaple,
     AisleCategory? Category,
-    [property: StringLength(200)] string? Note);
+    [property: StringLength(200)] string? Note,
+    /// <summary>Catalogue buy link. Null leaves it unchanged; empty string clears it.</summary>
+    [property: StringLength(2048)] string? PurchaseUrl);
 
 public sealed record RecipeUpsertRequest(
     [property: Required, StringLength(200, MinimumLength = 1)] string Name,
@@ -39,7 +41,8 @@ public sealed record RecipeIngredientDto(
     bool IsStaple,
     AisleCategory Category,
     string? Note,
-    int SortOrder);
+    int SortOrder,
+    string? PurchaseUrl);
 
 public sealed record RecipeDto(
     Guid Id,
@@ -54,14 +57,17 @@ public sealed record RecipeDto(
     bool IsFavourite,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    IReadOnlyList<RecipeIngredientDto> Ingredients)
+    IReadOnlyList<RecipeIngredientDto> Ingredients,
+    /// <summary>Versioned photo URL, or null when the recipe has no photo.</summary>
+    string? ImageUrl)
 {
-    public static RecipeDto From(Recipe r) => new(
+    public static RecipeDto From(Recipe r, DateTimeOffset? imageUpdatedAt) => new(
         r.Id, r.Name, r.Servings, r.Tags, r.PrepMins, r.Notes, r.MethodText, r.MethodSource, r.SourceUrl,
         r.IsFavourite, r.CreatedAt, r.UpdatedAt,
         r.Ingredients.OrderBy(i => i.SortOrder).Select(i => new RecipeIngredientDto(
             i.Id, i.IngredientId, i.Ingredient.Name, i.Quantity, i.Unit, i.QuantityText, i.Optional,
-            i.Ingredient.IsStaple, i.Ingredient.Category, i.Note, i.SortOrder)).ToList());
+            i.Ingredient.IsStaple, i.Ingredient.Category, i.Note, i.SortOrder, i.Ingredient.PurchaseUrl)).ToList(),
+        imageUpdatedAt is { } at ? RecipeImageEndpoints.UrlFor(r.Id, at) : null);
 }
 
 public sealed record RecipeSummaryDto(
@@ -72,7 +78,8 @@ public sealed record RecipeSummaryDto(
     int? PrepMins,
     bool IsFavourite,
     int IngredientCount,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    string? ImageUrl);
 
 public sealed record TagCount(string Tag, int Count);
 

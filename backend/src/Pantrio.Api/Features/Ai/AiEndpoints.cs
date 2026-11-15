@@ -38,7 +38,9 @@ public sealed record SuggestedIngredientDto(
     /// <summary>Set when the name matched the catalogue exactly or by alias; the row links to that entry.</summary>
     Guid? IngredientId,
     /// <summary>A close-but-not-certain catalogue entry the person may choose to use instead.</summary>
-    CatalogueMatch? PossibleMatch);
+    CatalogueMatch? PossibleMatch,
+    /// <summary>The linked catalogue entry's buy link, so saving the draft keeps it.</summary>
+    string? PurchaseUrl);
 
 public sealed record IngredientSuggestionResponse(int Servings, IReadOnlyList<SuggestedIngredientDto> Ingredients, bool IsFake);
 
@@ -129,7 +131,8 @@ public static class AiEndpoints
                 linked?.IsStaple ?? i.IsStaple,
                 i.Note,
                 linked?.Id,
-                match is { Kind: MatchKind.Fuzzy } ? new CatalogueMatch(match.Ingredient.Id, match.Ingredient.Name) : null);
+                match is { Kind: MatchKind.Fuzzy } ? new CatalogueMatch(match.Ingredient.Id, match.Ingredient.Name) : null,
+                linked?.PurchaseUrl);
         }).ToList();
 
         return TypedResults.Ok(new IngredientSuggestionResponse(result.Servings, rows, suggester is FakeIngredientSuggester));

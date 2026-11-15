@@ -107,6 +107,40 @@ export function useDeleteRecipe() {
   });
 }
 
+/** Uploads (or replaces) a recipe photo. The blob is sent as multipart form data. */
+export function useUploadRecipeImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, blob }: { id: string; blob: Blob }) =>
+      unwrap(
+        api.PUT("/api/recipes/{id}/image", {
+          params: { path: { id } },
+          body: { file: blob as unknown as string },
+          bodySerializer: (body) => {
+            const form = new FormData();
+            form.append("file", body.file as unknown as Blob, "photo.jpg");
+            return form;
+          },
+        }),
+      ),
+    onSuccess: ({ imageUrl }, { id }) => {
+      qc.setQueryData<Recipe>(recipeKeys.detail(id), (r) => (r ? { ...r, imageUrl } : r));
+      qc.invalidateQueries({ queryKey: ["recipes", "list"] });
+    },
+  });
+}
+
+export function useDeleteRecipeImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => unwrap(api.DELETE("/api/recipes/{id}/image", { params: { path: { id } } })),
+    onSuccess: (_data, id) => {
+      qc.setQueryData<Recipe>(recipeKeys.detail(id), (r) => (r ? { ...r, imageUrl: null } : r));
+      qc.invalidateQueries({ queryKey: ["recipes", "list"] });
+    },
+  });
+}
+
 export function useIngredientSearch(search: string, enabled: boolean) {
   return useQuery({
     queryKey: ["ingredients", "search", search],

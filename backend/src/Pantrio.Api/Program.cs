@@ -54,6 +54,7 @@ api.MapAuthEndpoints();
 api.MapHouseholdEndpoints();
 api.MapIngredientEndpoints();
 api.MapRecipeEndpoints();
+api.MapRecipeImageEndpoints();
 api.MapAiEndpoints();
 api.MapMealPlanEndpoints();
 api.MapShoppingListEndpoints();

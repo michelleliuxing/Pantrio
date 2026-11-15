@@ -38,7 +38,8 @@ public static class RecipeEndpoints
                     : query.OrderByDescending(r => r.IsFavourite).ThenBy(r => r.Name);
 
                 var items = await query
-                    .Select(r => new RecipeSummaryDto(r.Id, r.Name, r.Servings, r.Tags, r.PrepMins, r.IsFavourite, r.Ingredients.Count, r.UpdatedAt))
+                    .Select(r => new RecipeSummaryDto(r.Id, r.Name, r.Servings, r.Tags, r.PrepMins, r.IsFavourite, r.Ingredients.Count, r.UpdatedAt,
+                        r.Image == null ? null : RecipeImageEndpoints.UrlFor(r.Id, r.Image.UpdatedAt)))
                     .ToListAsync(ct);
                 return TypedResults.Ok(items);
             })
@@ -53,7 +54,9 @@ public static class RecipeEndpoints
             .WithName("ListRecipeTags");
 
         group.MapGet("/{id:guid}", async Task<Results<Ok<RecipeDto>, NotFound>> (Guid id, RecipeService recipes, CancellationToken ct) =>
-                await recipes.LoadAsync(id, ct) is { } recipe ? TypedResults.Ok(RecipeDto.From(recipe)) : TypedResults.NotFound())
+                await recipes.LoadAsync(id, ct) is { } recipe
+                    ? TypedResults.Ok(RecipeDto.From(recipe, await recipes.ImageVersionAsync(id, ct)))
+                    : TypedResults.NotFound())
             .WithName("GetRecipe");
 
         group.MapPost("/", async Task<Results<Created<RecipeDto>, ValidationProblem>> (
@@ -69,7 +72,7 @@ public static class RecipeEndpoints
                 db.Recipes.Add(recipe);
                 await recipes.ApplyAsync(recipe, body, ct);
                 await db.SaveChangesAsync(ct);
-                return TypedResults.Created($"/api/recipes/{recipe.Id}", RecipeDto.From(recipe));
+                return TypedResults.Created($"/api/recipes/{recipe.Id}", RecipeDto.From(recipe, null));
             })
             .WithName("CreateRecipe")
             .RequireMember(HouseholdRole.Editor);
@@ -91,13 +94,13 @@ public static class RecipeEndpoints
 
                 await recipes.ApplyAsync(recipe, body, ct);
                 await db.SaveChangesAsync(ct);
-                return TypedResults.Ok(RecipeDto.From(recipe));
+                return TypedResults.Ok(RecipeDto.From(recipe, await recipes.ImageVersionAsync(id, ct)));
             })
             .WithName("UpdateRecipe")
             .RequireMember(HouseholdRole.Editor);
 
         group.MapPatch("/{id:guid}", async Task<Results<Ok<RecipeSummaryDto>, NotFound>> (
-                Guid id, UpdateRecipeFlagsRequest body, PantrioDbContext db, CancellationToken ct) =>
+                Guid id, UpdateRecipeFlagsRequest body, PantrioDbContext db, RecipeService recipes, CancellationToken ct) =>
             {
                 var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Id == id, ct);
                 if (recipe is null)
@@ -108,8 +111,9 @@ public static class RecipeEndpoints
                 if (body.IsFavourite is { } fav) recipe.IsFavourite = fav;
                 await db.SaveChangesAsync(ct);
                 var count = await db.RecipeIngredients.CountAsync(i => i.RecipeId == id, ct);
+                var imageAt = await recipes.ImageVersionAsync(id, ct);
                 return TypedResults.Ok(new RecipeSummaryDto(recipe.Id, recipe.Name, recipe.Servings, recipe.Tags, recipe.PrepMins,
-                    recipe.IsFavourite, count, recipe.UpdatedAt));
+                    recipe.IsFavourite, count, recipe.UpdatedAt, imageAt is { } at ? RecipeImageEndpoints.UrlFor(id, at) : null));
             })
             .WithName("UpdateRecipeFlags")
             .RequireMember(HouseholdRole.Editor);
@@ -166,9 +170,15 @@ public static class RecipeEndpoints
                 }
 
                 db.Recipes.Add(copy);
+                var photo = await db.RecipeImages.AsNoTracking().FirstOrDefaultAsync(i => i.RecipeId == id, ct);
+                if (photo is not null)
+                {
+                    db.RecipeImages.Add(new RecipeImage { RecipeId = copy.Id, ContentType = photo.ContentType, Data = photo.Data });
+                }
+
                 await db.SaveChangesAsync(ct);
                 var saved = (await recipes.LoadAsync(copy.Id, ct))!;
-                return TypedResults.Created($"/api/recipes/{copy.Id}", RecipeDto.From(saved));
+                return TypedResults.Created($"/api/recipes/{copy.Id}", RecipeDto.From(saved, await recipes.ImageVersionAsync(copy.Id, ct)));
             })
             .WithName("DuplicateRecipe")
             .RequireMember(HouseholdRole.Editor);

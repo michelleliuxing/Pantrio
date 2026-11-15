@@ -244,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recipes/{id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UploadRecipeImage"];
+        post?: never;
+        delete: operations["DeleteRecipeImage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/meal-plans/{weekStart}": {
         parameters: {
             query?: never;
@@ -449,6 +465,7 @@ export interface components {
             isStaple?: null | boolean;
             defaultUnit?: null | string;
             aliases?: null | string[];
+            purchaseUrl?: null | string;
         };
         DevLoginRequest: {
             email: string;
@@ -480,6 +497,8 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        /** Format: binary */
+        IFormFile: string;
         IngredientDto: {
             /** Format: uuid */
             id: string;
@@ -488,6 +507,7 @@ export interface components {
             defaultUnit: null | string;
             category: components["schemas"]["AisleCategory"];
             isStaple: boolean;
+            purchaseUrl: null | string;
         };
         IngredientSuggestionRequest: {
             dishName: string;
@@ -565,6 +585,10 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             ingredients: components["schemas"]["RecipeIngredientDto"][];
+            imageUrl: null | string;
+        };
+        RecipeImageDto: {
+            imageUrl: string;
         };
         RecipeIngredientDto: {
             /** Format: uuid */
@@ -582,6 +606,7 @@ export interface components {
             note: null | string;
             /** Format: int32 */
             sortOrder: number;
+            purchaseUrl: null | string;
         };
         RecipeIngredientInput: {
             /** Format: uuid */
@@ -595,6 +620,7 @@ export interface components {
             isStaple?: null | boolean;
             category?: null | components["schemas"]["AisleCategory"];
             note?: null | string;
+            purchaseUrl?: null | string;
         };
         /** @enum {unknown} */
         RecipeSort: "name" | "recent" | null;
@@ -612,6 +638,7 @@ export interface components {
             ingredientCount: number;
             /** Format: date-time */
             updatedAt: string;
+            imageUrl: null | string;
         };
         RecipeUpsertRequest: {
             name: string;
@@ -649,6 +676,9 @@ export interface components {
             amountIncreased: boolean;
             boughtAmount: null | string;
             sources: components["schemas"]["ListSourceDto"][];
+            /** Format: uuid */
+            ingredientId: null | string;
+            purchaseUrl: null | string;
         };
         SuggestedIngredientDto: {
             name: string;
@@ -663,6 +693,7 @@ export interface components {
             /** Format: uuid */
             ingredientId: null | string;
             possibleMatch: null | components["schemas"]["CatalogueMatch"];
+            purchaseUrl: null | string;
         };
         /** @enum {unknown} */
         SuggestionMode: "all" | "more" | null;
@@ -694,6 +725,7 @@ export interface components {
             isStaple?: null | boolean;
             defaultUnit?: null | string;
             aliases?: null | string[];
+            purchaseUrl?: null | string;
         };
         UpdateListItemRequest: {
             state?: null | components["schemas"]["ItemState"];
@@ -1269,6 +1301,77 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RecipeDto"];
                 };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UploadRecipeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeImageDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DeleteRecipeImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found */
             404: {

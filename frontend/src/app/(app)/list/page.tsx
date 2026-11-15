@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, ChevronDown, Plus, Trash2, TrendingUp } from "lucide-react";
+import { Check, ChevronDown, ExternalLink, Plus, Trash2, TrendingUp } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,7 +12,16 @@ import { dayOfMonth, parseDate } from "@/lib/dates";
 import { CATEGORIES, CATEGORY_LABELS } from "@/lib/labels";
 import { useIngredientSearch } from "@/lib/queries/recipes";
 import { useMe } from "@/lib/queries/me";
-import { useAddExtra, useClearCompleted, useDeleteListItem, useShoppingList, useUpdateListItem, type ListItem } from "@/lib/queries/list";
+import {
+  useAddExtra,
+  useClearCompleted,
+  useDeleteListItem,
+  useSetPurchaseUrl,
+  useShoppingList,
+  useUpdateListItem,
+  type ListItem,
+} from "@/lib/queries/list";
+import { isHttpUrl, linkHost } from "@/components/recipes/editor-model";
 import { useDebounced } from "@/hooks/use-debounced";
 
 export default function ListPage() {
@@ -166,6 +175,18 @@ function Row({ item, canEdit, check }: { item: ListItem; canEdit: boolean; check
           </span>
           {item.amount && <span className="shrink-0 text-right text-sm font-medium tabular-nums">{item.amount}</span>}
         </button>
+        {item.purchaseUrl && (
+          <a
+            href={item.purchaseUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-10 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
+            aria-label={`Buy ${item.name} at ${linkHost(item.purchaseUrl)}`}
+            title={linkHost(item.purchaseUrl)}
+          >
+            <ExternalLink className="size-4" />
+          </a>
+        )}
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -194,6 +215,10 @@ function Row({ item, canEdit, check }: { item: ListItem; canEdit: boolean; check
           ) : (
             <p className="text-muted-foreground">Added by hand.</p>
           )}
+          {canEdit && item.ingredientId && <BuyLinkEditor key={item.purchaseUrl ?? ""} item={item} />}
+          {!item.ingredientId && item.purchaseUrl && (
+            <p className="text-xs text-muted-foreground">Buy link from the catalogue entry “{item.name}”.</p>
+          )}
           {canEdit && (
             <div className="flex flex-wrap gap-2">
               {item.state === "needed" && !check && (
@@ -216,6 +241,51 @@ function Row({ item, canEdit, check }: { item: ListItem; canEdit: boolean; check
         </div>
       )}
     </li>
+  );
+}
+
+/** Add, change or remove the buy link of the catalogue ingredient behind a list line. */
+function BuyLinkEditor({ item }: { item: ListItem }) {
+  const setUrl = useSetPurchaseUrl();
+  const [value, setValue] = useState(item.purchaseUrl ?? "");
+  const changed = value.trim() !== (item.purchaseUrl ?? "");
+  const invalid = value.trim() !== "" && !isHttpUrl(value);
+
+  return (
+    <form
+      className="space-y-1"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (invalid || !item.ingredientId) return;
+        setUrl.mutate(
+          { ingredientId: item.ingredientId, purchaseUrl: value.trim() },
+          {
+            onSuccess: () => toast.success(value.trim() ? "Buy link saved" : "Buy link removed"),
+            onError: (err) => toast.error(errorMessage(err)),
+          },
+        );
+      }}
+    >
+      <label className="text-xs text-muted-foreground" htmlFor={`buy-${item.id}`}>
+        Where to buy
+      </label>
+      <div className="flex gap-2">
+        <input
+          id={`buy-${item.id}`}
+          type="url"
+          inputMode="url"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Paste a Woolworths or Coles product link"
+          aria-invalid={invalid || undefined}
+          className="h-10 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm"
+        />
+        <Button type="submit" variant="outline" className="h-10" disabled={!changed || invalid || setUrl.isPending}>
+          Save
+        </Button>
+      </div>
+      {invalid && <p className="text-xs text-destructive">Paste the full link, starting with https://</p>}
+    </form>
   );
 }
 

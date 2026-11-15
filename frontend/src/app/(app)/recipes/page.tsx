@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Plus, Search, Star, Clock, Users } from "lucide-react";
+import { Plus, Search, Star, Clock, Users, UtensilsCrossed } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,7 +65,16 @@ export default function RecipesPage() {
         <ul className="divide-y rounded-xl border">
           {recipes.data?.map((r) => (
             <li key={r.id} className="flex items-center">
-              <Link href={`/recipes/${r.id}`} className="min-w-0 flex-1 px-4 py-3">
+              <Link href={`/recipes/${r.id}`} className="flex min-w-0 flex-1 items-center gap-3 py-2.5 pr-2 pl-3">
+                {r.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- behind the session cookie; see RecipePhoto
+                  <img src={r.imageUrl} alt="" loading="lazy" className="size-14 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <span className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <UtensilsCrossed className="size-5" aria-hidden />
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">
                 <p className="truncate font-medium">{r.name}</p>
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
@@ -79,6 +88,7 @@ export default function RecipesPage() {
                   <span>{r.ingredientCount} ingredients</span>
                   {r.tags.length > 0 && <span className="truncate">{r.tags.join(" · ")}</span>}
                 </p>
+                </span>
               </Link>
               <button
                 type="button"

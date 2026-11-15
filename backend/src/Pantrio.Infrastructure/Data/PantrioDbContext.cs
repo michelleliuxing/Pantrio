@@ -16,6 +16,7 @@ public sealed class PantrioDbContext(DbContextOptions<PantrioDbContext> options,
     public DbSet<HouseholdMember> HouseholdMembers => Set<HouseholdMember>();
     public DbSet<Ingredient> Ingredients => Set<Ingredient>();
     public DbSet<Recipe> Recipes => Set<Recipe>();
+    public DbSet<RecipeImage> RecipeImages => Set<RecipeImage>();
     public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
     public DbSet<MealPlan> MealPlans => Set<MealPlan>();
     public DbSet<MealPlanEntry> MealPlanEntries => Set<MealPlanEntry>();
@@ -87,6 +88,7 @@ public sealed class PantrioDbContext(DbContextOptions<PantrioDbContext> options,
             e.Property(x => x.Name).HasMaxLength(120);
             e.Property(x => x.NormalizedName).HasMaxLength(120);
             e.Property(x => x.DefaultUnit).HasMaxLength(24);
+            e.Property(x => x.PurchaseUrl).HasMaxLength(2048);
             e.HasIndex(x => new { x.HouseholdId, x.NormalizedName }).IsUnique();
             e.HasIndex(x => x.NormalizedName).HasMethod("gin").HasOperators("gin_trgm_ops");
             e.HasOne<Household>().WithMany().HasForeignKey(x => x.HouseholdId).OnDelete(DeleteBehavior.Cascade);
@@ -100,8 +102,16 @@ public sealed class PantrioDbContext(DbContextOptions<PantrioDbContext> options,
             e.Property(x => x.MethodText).HasMaxLength(20000);
             e.Property(x => x.SourceUrl).HasMaxLength(2048);
             e.HasIndex(x => new { x.HouseholdId, x.Name });
+            e.HasOne(x => x.Image).WithOne().HasForeignKey<RecipeImage>(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Ingredients).WithOne().HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Household>().WithMany().HasForeignKey(x => x.HouseholdId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RecipeImage>(e =>
+        {
+            e.ToTable("recipe_image");
+            e.HasKey(x => x.RecipeId);
+            e.Property(x => x.ContentType).HasMaxLength(32);
         });
 
         b.Entity<RecipeIngredient>(e =>

@@ -8,9 +8,9 @@ using Pantrio.Infrastructure.Data;
 
 namespace Pantrio.Api.Features.Ingredients;
 
-public sealed record IngredientDto(Guid Id, string Name, IReadOnlyList<string> Aliases, string? DefaultUnit, AisleCategory Category, bool IsStaple)
+public sealed record IngredientDto(Guid Id, string Name, IReadOnlyList<string> Aliases, string? DefaultUnit, AisleCategory Category, bool IsStaple, string? PurchaseUrl)
 {
-    public static IngredientDto From(Ingredient i) => new(i.Id, i.Name, i.Aliases, i.DefaultUnit, i.Category, i.IsStaple);
+    public static IngredientDto From(Ingredient i) => new(i.Id, i.Name, i.Aliases, i.DefaultUnit, i.Category, i.IsStaple, i.PurchaseUrl);
 }
 
 public sealed record CreateIngredientRequest(
@@ -18,14 +18,17 @@ public sealed record CreateIngredientRequest(
     AisleCategory? Category,
     bool? IsStaple,
     [property: StringLength(24)] string? DefaultUnit,
-    [property: MaxLength(20)] IReadOnlyList<string>? Aliases);
+    [property: MaxLength(20)] IReadOnlyList<string>? Aliases,
+    [property: StringLength(2048)] string? PurchaseUrl);
 
 public sealed record UpdateIngredientRequest(
     [property: StringLength(120, MinimumLength = 1)] string? Name,
     AisleCategory? Category,
     bool? IsStaple,
     [property: StringLength(24)] string? DefaultUnit,
-    [property: MaxLength(20)] IReadOnlyList<string>? Aliases);
+    [property: MaxLength(20)] IReadOnlyList<string>? Aliases,
+    /// <summary>Where to buy it. Empty string clears the link.</summary>
+    [property: StringLength(2048)] string? PurchaseUrl);
 
 public sealed record UnitInfo(string Code, Dimension Dimension);
 
@@ -89,6 +92,11 @@ public static class IngredientEndpoints
                     return problem;
                 }
 
+                if (PurchaseUrlProblem(body.PurchaseUrl) is { } urlProblem)
+                {
+                    return urlProblem;
+                }
+
                 var ingredient = new Ingredient
                 {
                     Name = body.Name.Trim(),
@@ -97,6 +105,7 @@ public static class IngredientEndpoints
                     IsStaple = body.IsStaple ?? false,
                     DefaultUnit = unit,
                     Aliases = CleanAliases(body.Aliases, normalized),
+                    PurchaseUrl = body.PurchaseUrl is null ? null : Urls.Normalize(body.PurchaseUrl),
                 };
                 db.Ingredients.Add(ingredient);
                 await db.SaveChangesAsync(ct);
@@ -137,6 +146,12 @@ public static class IngredientEndpoints
                     ingredient.DefaultUnit = unit;
                 }
 
+                if (PurchaseUrlProblem(body.PurchaseUrl) is { } urlProblem)
+                {
+                    return urlProblem;
+                }
+
+                if (body.PurchaseUrl is { } url) ingredient.PurchaseUrl = Urls.Normalize(url);
                 if (body.Category is { } category) ingredient.Category = category;
                 if (body.IsStaple is { } staple) ingredient.IsStaple = staple;
                 if (body.Aliases is { } aliases) ingredient.Aliases = CleanAliases(aliases, ingredient.NormalizedName);
@@ -152,6 +167,11 @@ public static class IngredientEndpoints
 
     internal static string EscapeLike(string value) =>
         value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "\\%", StringComparison.Ordinal).Replace("_", "\\_", StringComparison.Ordinal);
+
+    internal static ValidationProblem? PurchaseUrlProblem(string? url, string key = "purchaseUrl") =>
+        string.IsNullOrWhiteSpace(url) || Urls.IsHttp(url)
+            ? null
+            : TypedResults.ValidationProblem(new Dictionary<string, string[]> { [key] = ["Use a full http(s) link, e.g. a Woolworths product page."] });
 
     private static List<string> CleanAliases(IEnumerable<string>? aliases, string normalizedName) =>
         (aliases ?? []).Select(Ingredient.Normalize).Where(a => a.Length is > 0 and <= 120 && a != normalizedName).Distinct().ToList();

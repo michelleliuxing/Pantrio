@@ -28,7 +28,11 @@ public sealed record ShoppingListItemDto(
     bool AmountIncreased,
     /// <summary>What was ticked as bought before the amount grew, e.g. "400 g".</summary>
     string? BoughtAmount,
-    IReadOnlyList<ListSourceDto> Sources);
+    IReadOnlyList<ListSourceDto> Sources,
+    /// <summary>The catalogue entry behind the line (null for extras).</summary>
+    Guid? IngredientId,
+    /// <summary>Where to buy it, read live from the catalogue (extras match by name).</summary>
+    string? PurchaseUrl);
 
 public sealed record ShoppingListDto(IReadOnlyList<ShoppingListItemDto> Items);
 
@@ -99,7 +103,7 @@ public static class ShoppingListEndpoints
                 };
                 db.ShoppingListItems.Add(row);
                 await db.SaveChangesAsync(ct);
-                return TypedResults.Created($"/api/shopping-list/items/{row.Id}", ToDto(row, new Dictionary<Guid, DateOnly>()));
+                return TypedResults.Created($"/api/shopping-list/items/{row.Id}", ToDto(row, new Dictionary<Guid, DateOnly>(), await LinksAsync(db, [row], ct)));
             })
             .WithName("AddShoppingListExtra")
             .RequireMember(HouseholdRole.Editor);
@@ -138,7 +142,7 @@ public static class ShoppingListEndpoints
                 if (body.Category is { } category) row.Category = category;
                 row.UpdatedAt = DateTimeOffset.UtcNow;
                 await db.SaveChangesAsync(ct);
-                return TypedResults.Ok(ToDto(row, await WeeksAsync(db, [row], ct)));
+                return TypedResults.Ok(ToDto(row, await WeeksAsync(db, [row], ct), await LinksAsync(db, [row], ct)));
             })
             .WithName("UpdateShoppingListItem")
             .RequireMember(HouseholdRole.Editor);
@@ -188,15 +192,45 @@ public static class ShoppingListEndpoints
 
     private static async Task<ShoppingListDto> ToDtoAsync(PantrioDbContext db, List<ShoppingListItem> rows, CancellationToken ct)
     {
-        var weeks = await WeeksAsync(db, rows, ct);
-        var visible = rows.Where(r => ShoppingListService.ToDomain(r).IsVisible)
+        var visibleRows = rows.Where(r => ShoppingListService.ToDomain(r).IsVisible).ToList();
+        var weeks = await WeeksAsync(db, visibleRows, ct);
+        var links = await LinksAsync(db, visibleRows, ct);
+        var visible = visibleRows
             .OrderBy(r => r.Category).ThenBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(r => ToDto(r, weeks))
+            .Select(r => ToDto(r, weeks, links))
             .ToList();
         return new ShoppingListDto(visible);
     }
 
-    private static ShoppingListItemDto ToDto(ShoppingListItem row, IReadOnlyDictionary<Guid, DateOnly> weeks)
+    /// <summary>Buy links for the given lines: by catalogue id for recipe lines, by catalogue name or alias for extras.</summary>
+    private static async Task<Func<ShoppingListItem, string?>> LinksAsync(PantrioDbContext db, IReadOnlyCollection<ShoppingListItem> rows, CancellationToken ct)
+    {
+        var ids = rows.Where(r => r.IngredientId is not null).Select(r => r.IngredientId!.Value).Distinct().ToList();
+        var names = rows.Where(r => r.IsExtra).Select(r => Ingredient.Normalize(r.Name)).Distinct().ToList();
+        if (ids.Count == 0 && names.Count == 0)
+        {
+            return _ => null;
+        }
+
+        var linked = await db.Ingredients.AsNoTracking()
+            .Where(i => i.PurchaseUrl != null
+                        && (ids.Contains(i.Id) || names.Contains(i.NormalizedName) || i.Aliases.Any(a => names.Contains(a))))
+            .Select(i => new { i.Id, i.NormalizedName, i.Aliases, i.PurchaseUrl })
+            .ToListAsync(ct);
+        var byId = linked.ToDictionary(i => i.Id, i => i.PurchaseUrl);
+        var byName = new Dictionary<string, string?>();
+        foreach (var i in linked)
+        {
+            byName.TryAdd(i.NormalizedName, i.PurchaseUrl);
+            foreach (var alias in i.Aliases) byName.TryAdd(alias, i.PurchaseUrl);
+        }
+
+        return row => row.IngredientId is { } id
+            ? byId.GetValueOrDefault(id)
+            : row.IsExtra ? byName.GetValueOrDefault(Ingredient.Normalize(row.Name)) : null;
+    }
+
+    private static ShoppingListItemDto ToDto(ShoppingListItem row, IReadOnlyDictionary<Guid, DateOnly> weeks, Func<ShoppingListItem, string?> link)
     {
         var item = ShoppingListService.ToDomain(row);
         var amount = row.IsExtra ? row.ExtraQuantityText ?? string.Empty : ShoppingListRules.FormatTotal(item);
@@ -210,6 +244,6 @@ public static class ShoppingListEndpoints
             .ToList();
 
         return new ShoppingListItemDto(row.Id, row.Name, row.Category, row.State, row.IsExtra, row.InCheckGroup, row.Dimension,
-            row.UnitLabel, item.ActiveTotal, amount, row.AmountIncreased, bought, sources);
+            row.UnitLabel, item.ActiveTotal, amount, row.AmountIncreased, bought, sources, row.IngredientId, link(row));
     }
 }

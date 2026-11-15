@@ -262,6 +262,11 @@ namespace Pantrio.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("normalized_name");
 
+                    b.Property<string>("PurchaseUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("purchase_url");
+
                     b.HasKey("Id")
                         .HasName("pk_ingredient");
 
@@ -495,6 +500,37 @@ namespace Pantrio.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_recipe_household_id_name");
 
                     b.ToTable("recipe", (string)null);
+                });
+
+            modelBuilder.Entity("Pantrio.Infrastructure.Data.RecipeImage", b =>
+                {
+                    b.Property<Guid>("RecipeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipe_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("content_type");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("data");
+
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("household_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("RecipeId")
+                        .HasName("pk_recipe_image");
+
+                    b.ToTable("recipe_image", (string)null);
                 });
 
             modelBuilder.Entity("Pantrio.Infrastructure.Data.RecipeIngredient", b =>
@@ -776,6 +812,16 @@ namespace Pantrio.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_recipe_household_household_id");
                 });
 
+            modelBuilder.Entity("Pantrio.Infrastructure.Data.RecipeImage", b =>
+                {
+                    b.HasOne("Pantrio.Infrastructure.Data.Recipe", null)
+                        .WithOne("Image")
+                        .HasForeignKey("Pantrio.Infrastructure.Data.RecipeImage", "RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recipe_image_recipe_recipe_id");
+                });
+
             modelBuilder.Entity("Pantrio.Infrastructure.Data.RecipeIngredient", b =>
                 {
                     b.HasOne("Pantrio.Infrastructure.Data.Ingredient", "Ingredient")
@@ -833,6 +879,8 @@ namespace Pantrio.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Pantrio.Infrastructure.Data.Recipe", b =>
                 {
+                    b.Navigation("Image");
+
                     b.Navigation("Ingredients");
                 });
 
