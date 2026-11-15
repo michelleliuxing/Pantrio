@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { CalendarDays, BookOpen, ShoppingCart, Settings } from "lucide-react";
 import { cn } from "cn";
 import { ApiError } from "@/lib/api/client";
@@ -17,20 +17,18 @@ const tabs = [
 /**
  * Signed-in frame: a bottom bar on phones and a top bar on desktop. The frame and the page always render
  * (pages show their own loading states), and anonymous visitors are sent to sign in once /api/me says 401.
+ * Only the nav links read the pathname, inside Suspense, so pages stay prerenderable.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const router = useRouter();
   const me = useMe();
   const unauthorised = me.error instanceof ApiError && me.error.status === 401;
 
   useEffect(() => {
     if (unauthorised) {
-      router.replace(`/sign-in?returnUrl=${encodeURIComponent(pathname)}`);
+      router.replace(`/sign-in?returnUrl=${encodeURIComponent(window.location.pathname)}`);
     }
-  }, [unauthorised, pathname, router]);
-
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  }, [unauthorised, router]);
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -40,25 +38,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             Pantrio
           </Link>
           <nav className="hidden flex-1 items-center gap-1 md:flex" aria-label="Main">
-            {tabs.map((t) => (
-              <Link
-                key={t.href}
-                href={t.href}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground",
-                  isActive(t.href) && "bg-muted text-foreground",
-                )}
-              >
-                {t.label}
-              </Link>
-            ))}
+            <Suspense fallback={<TopLinks active={null} />}>
+              <WithPathname render={(p) => <TopLinks active={p} />} />
+            </Suspense>
           </nav>
           <Link
             href="/settings"
-            className={cn(
-              "ml-auto flex size-10 items-center justify-center rounded-full text-muted-foreground hover:text-foreground",
-              isActive("/settings") && "text-foreground",
-            )}
+            className="ml-auto flex size-10 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
             aria-label="Settings"
           >
             <Settings className="size-5" />
@@ -84,21 +70,50 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         aria-label="Main"
       >
         <div className="mx-auto grid max-w-md grid-cols-3">
-          {tabs.map((t) => (
-            <Link
-              key={t.href}
-              href={t.href}
-              className={cn(
-                "flex h-16 flex-col items-center justify-center gap-1 text-xs font-medium text-muted-foreground",
-                isActive(t.href) && "text-primary",
-              )}
-            >
-              <t.icon className="size-6" aria-hidden />
-              {t.label}
-            </Link>
-          ))}
+          <Suspense fallback={<BottomLinks active={null} />}>
+            <WithPathname render={(p) => <BottomLinks active={p} />} />
+          </Suspense>
         </div>
       </nav>
     </div>
   );
+}
+
+function WithPathname({ render }: { render: (pathname: string) => React.ReactNode }) {
+  return render(usePathname());
+}
+
+const isActive = (pathname: string | null, href: string) =>
+  pathname !== null && (pathname === href || pathname.startsWith(`${href}/`));
+
+function TopLinks({ active }: { active: string | null }) {
+  return tabs.map((t) => (
+    <Link
+      key={t.href}
+      href={t.href}
+      className={cn(
+        "rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground",
+        isActive(active, t.href) && "bg-muted text-foreground",
+      )}
+    >
+      {t.label}
+    </Link>
+  ));
+}
+
+function BottomLinks({ active }: { active: string | null }) {
+  return tabs.map((t) => (
+    <Link
+      key={t.href}
+      href={t.href}
+      aria-current={isActive(active, t.href) ? "page" : undefined}
+      className={cn(
+        "flex h-16 flex-col items-center justify-center gap-1 text-xs font-medium text-muted-foreground",
+        isActive(active, t.href) && "text-primary",
+      )}
+    >
+      <t.icon className="size-6" aria-hidden />
+      {t.label}
+    </Link>
+  ));
 }
