@@ -24,10 +24,8 @@ public static class DependencyInjection
                 .MigrationsHistoryTable("__ef_migrations_history"))
             .UseSnakeCaseNamingConvention());
 
-        // Build-time OpenAPI generation runs the app without a database; keys are not needed there.
-        var generatingDocument = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
         var dataProtection = services.AddDataProtection().SetApplicationName("pantrio");
-        if (!generatingDocument)
+        if (!BuildTime.IsGeneratingOpenApiDocument)
         {
             dataProtection.PersistKeysToDbContext<PantrioDbContext>();
         }
@@ -61,7 +59,7 @@ internal sealed class MigrationHostedService(IServiceProvider services, IConfigu
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        if (!config.GetValue("Database:MigrateOnStartup", true))
+        if (BuildTime.IsGeneratingOpenApiDocument || !config.GetValue("Database:MigrateOnStartup", true))
         {
             return;
         }
@@ -77,4 +75,14 @@ internal sealed class MigrationHostedService(IServiceProvider services, IConfigu
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+}
+
+public static class BuildTime
+{
+    /// <summary>
+    /// True while `dotnet build` starts the app to write the OpenAPI document. There is no database then,
+    /// so nothing may connect to one (migrations, data protection keys).
+    /// </summary>
+    public static bool IsGeneratingOpenApiDocument { get; } =
+        System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name == "GetDocument.Insider";
 }
