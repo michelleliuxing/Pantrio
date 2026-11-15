@@ -1,0 +1,25 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# .NET
+backend/**/bin/
+backend/**/obj/
+backend/artifacts/
+*.user
+.vs/
+TestResults/
+
+# Node / Next.js (frontend/.gitignore covers the rest)
+node_modules/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local backups
+*.dump
+*.sql.gz

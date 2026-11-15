@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Missing XML docs are not a build failure. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- Never compile generated files left by a build on the other side of the bind mount. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <!-- Inside the dev container, build output goes to a container volume so it never clashes with host builds. -->
+  <PropertyGroup Condition="'$(PANTRIO_ARTIFACTS)' != ''">
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(PANTRIO_ARTIFACTS)</ArtifactsPath>
+  </PropertyGroup>
+</Project>

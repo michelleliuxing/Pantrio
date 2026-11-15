@@ -1,0 +1,75 @@
+# Local development stack: `docker compose up`
+#   web  http://localhost:3000  (Next.js dev server; proxies /api to the api service)
+#   api  http://localhost:5080  (ASP.NET Core with dotnet watch)
+#   db   localhost:5433          (PostgreSQL, for psql / IDE access)
+# Secrets for local use go in ./.env (see .env.example). Never commit .env.
+
+name: pantrio
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: pantrio
+      POSTGRES_USER: pantrio
+      POSTGRES_PASSWORD: pantrio
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pantrio -d pantrio"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    working_dir: /repo/backend
+    command: dotnet watch --project src/Pantrio.Api --non-interactive run --no-launch-profile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5080
+      ConnectionStrings__Pantrio: Host=db;Port=5432;Database=pantrio;Username=pantrio;Password=pantrio
+      App__PublicOrigin: http://localhost:3000
+      Auth__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Auth__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Ai__OpenAI__ApiKey: ${OPENAI_API_KEY:-}
+      Ai__OpenAI__Model: ${OPENAI_MODEL:-}
+      PANTRIO_ARTIFACTS: /artifacts
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    ports:
+      - "127.0.0.1:5080:5080"
+    volumes:
+      - ./:/repo
+      - api-artifacts:/artifacts
+      - nuget:/root/.nuget/packages
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: node:24-alpine
+    working_dir: /repo/frontend
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- -H 0.0.0.0"
+    environment:
+      API_ORIGIN: http://api:5080
+      NEXT_TELEMETRY_DISABLED: "1"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./:/repo
+      - web-node-modules:/repo/frontend/node_modules
+      - web-next:/repo/frontend/.next
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  api-artifacts:
+  nuget:
+  web-node-modules:
+  web-next:
