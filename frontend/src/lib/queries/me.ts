@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { api, ApiError, unwrap, type Schemas } from "@/lib/api/client";
 
 export const meKey = ["me"] as const;
@@ -24,11 +25,12 @@ export function useAuthProviders() {
 
 export function useLogout() {
   const qc = useQueryClient();
+  const router = useRouter();
   return useMutation({
     mutationFn: () => unwrap(api.POST("/api/auth/logout")),
     onSuccess: () => {
+      router.replace("/sign-in");
       qc.clear();
-      window.location.assign("/sign-in");
     },
   });
 }

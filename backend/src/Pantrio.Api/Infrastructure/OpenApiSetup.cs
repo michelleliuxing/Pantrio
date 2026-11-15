@@ -11,24 +11,22 @@ public static class OpenApiSetup
             {
                 doc.Info.Title = "Pantrio API";
                 doc.Info.Version = "v1";
-                return Task.CompletedTask;
-            });
 
-            // Request bodies: a nullable property may be left out entirely (PATCH semantics),
-            // so the generated TypeScript marks it optional instead of required-but-null.
-            o.AddSchemaTransformer((schema, ctx, _) =>
-            {
-                if (!ctx.JsonTypeInfo.Type.Name.EndsWith("Request", StringComparison.Ordinal)
-                    || schema.Properties is null || schema.Required is null)
+                // Request bodies: a nullable property may be left out entirely (PATCH semantics), so the generated
+                // TypeScript marks it optional instead of required-but-null. Runs on the finished document because
+                // nullable enum references are wrapped in oneOf only after schema transformers have run.
+                foreach (var (name, schema) in doc.Components?.Schemas ?? new Dictionary<string, IOpenApiSchema>())
                 {
-                    return Task.CompletedTask;
-                }
-
-                foreach (var (name, prop) in schema.Properties)
-                {
-                    if (AllowsNull(prop))
+                    if ((name.EndsWith("Request", StringComparison.Ordinal) || name.EndsWith("Input", StringComparison.Ordinal))
+                        && schema is OpenApiSchema { Properties: { } props, Required: { } required })
                     {
-                        schema.Required.Remove(name);
+                        foreach (var (prop, propSchema) in props)
+                        {
+                            if (AllowsNull(propSchema))
+                            {
+                                required.Remove(prop);
+                            }
+                        }
                     }
                 }
 

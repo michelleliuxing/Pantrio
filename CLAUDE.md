@@ -35,6 +35,7 @@ Backend (host .NET 10 SDK; Docker must be running for integration tests):
 
 ```bash
 cd backend && dotnet build && dotnet test
+PANTRIO_REAL_AI_KEY=sk-... dotnet test --filter RealAiTests   # optional: one real OpenAI call
 cd backend && dotnet tool restore && dotnet ef migrations add <Name> -p src/Pantrio.Infrastructure -s src/Pantrio.Api
 ```
 
@@ -45,6 +46,8 @@ cd backend && dotnet tool restore && dotnet ef migrations add <Name> -p src/Pant
 - Frontend types come only from `src/lib/api/schema.d.ts` (generated). Never hand-write DTOs. After changing an endpoint: `dotnet build` (rewrites `openapi/pantrio.json`), then `npm run gen:api`, and commit both. CI fails if either is stale.
 - Every unsafe API request must send `X-Pantrio-Csrf: 1` (the shared client does).
 - All user data is household-scoped: entities implement `IHouseholdScoped`; a global query filter and a save interceptor enforce it. Never filter by household by hand in endpoints.
+- Entities get their UUIDv7 key in code, so add new rows with `db.X.Add(...)` explicitly. Attached only through an already-tracked parent's collection, EF assumes a keyed entity already exists and issues an UPDATE (the household write guard will refuse it).
+- AI calls go through `IIngredientSuggester`. With no `Ai__OpenAI__ApiKey` the deterministic `FakeIngredientSuggester` is used (tests, local dev). The model ID is config (`Ai__OpenAI__Model`, default `gpt-6-luna`). User text is sent to the model as JSON data, never inside the instructions.
 - Quantities are `decimal` / `numeric`, never floating point. Store exact values, round only for display.
 - Pin ASP.NET Core / EF packages to the 10.0.x line (NuGet's latest is .NET 11).
 - Never deploy to or change the VPS without the owner's explicit go-ahead.

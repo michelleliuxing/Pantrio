@@ -44,6 +44,7 @@ public sealed class PantrioDbContext(DbContextOptions<PantrioDbContext> options,
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.HasPostgresExtension("pg_trgm");
+        b.HasDbFunction(typeof(PgFunctions).GetMethod(nameof(PgFunctions.Similarity))!).HasName("similarity").IsBuiltIn();
 
         b.Entity<Household>(e =>
         {
@@ -215,8 +216,16 @@ public sealed class PantrioDbContext(DbContextOptions<PantrioDbContext> options,
 
             if (original != current || entry.Entity.HouseholdId != current)
             {
-                throw new CrossHouseholdWriteException($"Refused to write {entry.Metadata.ClrType.Name} belonging to another household.");
+                throw new CrossHouseholdWriteException(
+                    $"Refused to write {entry.Metadata.ClrType.Name} ({entry.State}) belonging to another household (row {original}/{entry.Entity.HouseholdId}, request {current}).");
             }
         }
     }
+}
+
+/// <summary>PostgreSQL functions usable in LINQ queries.</summary>
+public static class PgFunctions
+{
+    /// <summary>pg_trgm similarity between 0 and 1. Only translatable to SQL.</summary>
+    public static double Similarity(string a, string b) => throw new NotSupportedException("Only usable in EF Core queries.");
 }

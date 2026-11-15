@@ -17,6 +17,8 @@ public sealed class PantrioApiFactory : WebApplicationFactory<Program>, IAsyncLi
 
     public static readonly JsonSerializerOptions Json = CreateJson();
 
+    public const int AiDailyLimit = 5;
+
     public Action<IServiceCollection>? ConfigureTestServices { get; set; }
 
     public string Environment { get; init; } = "Testing";
@@ -42,6 +44,7 @@ public sealed class PantrioApiFactory : WebApplicationFactory<Program>, IAsyncLi
         builder.UseSetting("RateLimits:AuthPerMinute", "10000");
         builder.UseSetting("RateLimits:AiPerMinute", "10000");
         builder.UseSetting("Ai:OpenAI:ApiKey", "");
+        builder.UseSetting("Ai:DailyLimitPerHousehold", AiDailyLimit.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.ConfigureServices(services => ConfigureTestServices?.Invoke(services));
     }
 

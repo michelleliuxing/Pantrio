@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Pantrio.Infrastructure.Ai;
 using Pantrio.Infrastructure.Data;
 
 namespace Pantrio.Infrastructure;
@@ -15,6 +16,8 @@ public static class DependencyInjection
         var connectionString = config.GetConnectionString("Pantrio")
             ?? "Host=localhost;Port=5433;Database=pantrio;Username=pantrio;Password=pantrio";
 
+        // Registered first so migrations run before any other hosted service (data protection reads its key table at startup).
+        services.AddHostedService<MigrationHostedService>();
         services.AddScoped<HouseholdContext>();
         services.AddDbContext<PantrioDbContext>(o => o
             .UseNpgsql(connectionString, npgsql => npgsql
@@ -29,7 +32,25 @@ public static class DependencyInjection
             dataProtection.PersistKeysToDbContext<PantrioDbContext>();
         }
 
-        services.AddHostedService<MigrationHostedService>();
+        services.Configure<AiOptions>(o =>
+        {
+            config.GetSection("Ai").Bind(o);
+            var openAi = config.GetSection("Ai:OpenAI");
+            o.ApiKey = openAi["ApiKey"];
+            if (!string.IsNullOrWhiteSpace(openAi["Model"])) o.Model = openAi["Model"]!;
+            if (openAi["ReasoningEffort"] is { } effort) o.ReasoningEffort = effort;
+        });
+
+        // No key (tests, local dev) means the free deterministic fake; the real provider needs Ai__OpenAI__ApiKey.
+        if (string.IsNullOrWhiteSpace(config["Ai:OpenAI:ApiKey"]))
+        {
+            services.AddSingleton<IIngredientSuggester, FakeIngredientSuggester>();
+        }
+        else
+        {
+            services.AddSingleton<IIngredientSuggester, OpenAiIngredientSuggester>();
+        }
+
         return services;
     }
 }
