@@ -1,0 +1,83 @@
+# Pantrio on the VPS: API + PostgreSQL. Caddy (deploy/edge) terminates HTTPS and reaches the API
+# over the shared "edge" network. PostgreSQL is only on the private network and never published.
+#
+#   cd /opt/pantrio && docker compose -f compose.prod.yml --env-file .env up -d
+#
+# All settings come from .env (see .env.prod.example). No secrets live in this file.
+
+name: pantrio
+
+services:
+  pantrio-db:
+    image: postgres:18-alpine
+    container_name: pantrio-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pantrio
+      POSTGRES_USER: pantrio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    # Tuned for a 1 GB machine shared with another app; the container is capped at 256 MB.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=48MB
+      - -c
+      - effective_cache_size=160MB
+      - -c
+      - work_mem=2MB
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - max_connections=20
+      - -c
+      - wal_buffers=4MB
+      - -c
+      - max_wal_size=256MB
+      - -c
+      - random_page_cost=1.1
+    volumes:
+      - pantrio-pgdata:/var/lib/postgresql
+    networks: [internal]
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pantrio -d pantrio"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: &logging
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  pantrio-api:
+    image: ${PANTRIO_API_IMAGE:-ghcr.io/michelleliuxing/pantrio-api:latest}
+    container_name: pantrio-api
+    restart: unless-stopped
+    depends_on:
+      pantrio-db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Pantrio: Host=pantrio-db;Port=5432;Database=pantrio;Username=pantrio;Password=${POSTGRES_PASSWORD};Maximum Pool Size=10
+      App__PublicOrigin: ${PUBLIC_ORIGIN:?set PUBLIC_ORIGIN (the Vercel URL) in .env}
+      Auth__Google__ClientId: ${GOOGLE_CLIENT_ID:?set GOOGLE_CLIENT_ID in .env}
+      Auth__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:?set GOOGLE_CLIENT_SECRET in .env}
+      Ai__OpenAI__ApiKey: ${OPENAI_API_KEY:-}
+      Ai__OpenAI__Model: ${OPENAI_MODEL:-gpt-6-luna}
+      Ai__DailyLimitPerHousehold: ${AI_DAILY_LIMIT_PER_HOUSEHOLD:-60}
+      Ai__DailyLimitGlobal: ${AI_DAILY_LIMIT_GLOBAL:-600}
+      # Workstation GC, and keep the managed heap well inside the container limit.
+      DOTNET_gcServer: "0"
+      DOTNET_GCHeapHardLimitPercent: "0x46"
+    networks: [internal, edge]
+    mem_limit: 256m
+    logging: *logging
+
+networks:
+  internal: {}
+  # Created once by deploy/edge (docker network create edge); Caddy and both apps join it.
+  edge:
+    external: true
+
+volumes:
+  pantrio-pgdata:

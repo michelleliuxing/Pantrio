@@ -1,0 +1,38 @@
+{
+	email {$ACME_EMAIL}
+}
+
+(common) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	log {
+		output stdout
+		format console
+	}
+}
+
+# Pantrio API. Only the Vercel frontend calls it (server-side /api rewrite).
+{$PANTRIO_API_DOMAIN} {
+	import common
+	request_body {
+		max_size 1MB
+	}
+	reverse_proxy pantrio-api:8080
+}
+
+# PawfectBite: the same upstream its nginx used (Spring Boot on 8080, container "pawfectbite-server").
+{$PAWFECTBITE_DOMAIN} {
+	import common
+	reverse_proxy pawfectbite-server:8080 {
+		transport http {
+			read_timeout 60s
+			write_timeout 60s
+		}
+	}
+}

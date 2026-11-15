@@ -10,7 +10,7 @@ Shared household meal planner: plan the week, the shopping list builds itself. P
   - `src/Pantrio.Api` minimal API endpoints, auth, rate limits. OpenAPI doc written to `backend/openapi/pantrio.json` on every build.
   - `tests/Pantrio.Domain.Tests` unit tests; `tests/Pantrio.Api.Tests` integration tests against real PostgreSQL via Testcontainers.
 - `frontend/` Next.js 16 (App Router, client components), Tailwind 4, shadcn/ui (base-nova), TanStack Query. Deployed to Vercel.
-- `deploy/` production compose, Caddy edge config, backup scripts.
+- `deploy/` production compose (API + PostgreSQL, 256 MB caps), Caddy edge for both apps on the VPS, backup/restore scripts, runbook in `deploy/README.md`. The API image is built by `.github/workflows/release.yml` and pushed to GHCR after CI passes on `main`.
 
 ## Commands
 

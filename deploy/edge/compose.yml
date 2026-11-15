@@ -1,0 +1,41 @@
+# Shared HTTPS edge for every app on the VPS. Replaces PawfectBite's nginx + certbot containers:
+# Caddy owns ports 80/443, gets and renews certificates itself, and proxies by hostname.
+#
+#   docker network create edge            # once
+#   cd /opt/edge && docker compose up -d
+#
+# See deploy/README.md for the cutover and rollback steps. Do not start this while nginx holds 80/443.
+
+name: edge
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: edge-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      PANTRIO_API_DOMAIN: ${PANTRIO_API_DOMAIN:?set PANTRIO_API_DOMAIN in /opt/edge/.env}
+      PAWFECTBITE_DOMAIN: ${PAWFECTBITE_DOMAIN:?set PAWFECTBITE_DOMAIN in /opt/edge/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in /opt/edge/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [edge]
+    mem_limit: 64m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  # Certificates live here. Back it up or let Caddy re-issue after a move.
+  caddy-data:
+  caddy-config:
